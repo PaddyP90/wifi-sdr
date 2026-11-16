@@ -65,9 +65,6 @@ using clk = std::chrono::steady_clock;
 
 namespace {
 
-constexpr uint16_t kPid8812bu = 0xb812;
-constexpr uint16_t kPid8812cu = 0xc812;
-constexpr uint16_t kPid8812eu = 0xa81a; // RTL8822E: the 8822C path throughout
 // Measured dB per IGI step: 8822B 0.95, 8822C ~1.0 (FINDINGS §4). Range IGI 0x1C..0x50.
 constexpr double kGainStepB = 0.95, kGainStepC = 1.0;
 double gain_step(bool cu) { return cu ? kGainStepC : kGainStepB; }
@@ -194,7 +191,7 @@ public:
     }
     if (args.count("port"))
       o.port = args.at("port");
-    _cu = o.pid == kPid8812cu || o.pid == kPid8812eu;
+    _cu = jaguar3_pid(o.pid);
     _eu = o.pid == kPid8812eu;
     o.channel = channel_for(_set.freq);
     o.thermal_track = false; // no host register traffic while streaming
@@ -555,7 +552,7 @@ SoapySDR::KwargsList find_wsdr(const SoapySDR::Kwargs &args) {
     if (libusb_get_device_descriptor(list[i], &d) != 0)
       continue;
     const uint16_t rpid = realtek_pid(d.idVendor, d.idProduct); // an OEM alias lists as its Realtek pid
-    if (rpid != kPid8812bu && rpid != kPid8812cu && rpid != kPid8812eu)
+    if (rpid != kPid8812bu && !jaguar3_pid(rpid))
       continue;
     char pid[8];
     std::snprintf(pid, sizeof pid, "0x%04x", rpid);
