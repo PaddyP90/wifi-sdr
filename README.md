@@ -22,6 +22,8 @@ The evidence is under [`evidence/`](evidence/), and the details are in [FINDINGS
 | RTL8812EU `0bda:a81a` | RTL8822E (Jaguar3) | USB 2 | 2.5, 5 MS/s | up to 40 MS/s | A + B |
 
 ¹ The efuse on this 8812CU board disables USB 3.
+The TP-Link Archer T3U Plus (`2357:0138`) is an RTL8812BU under TP-Link's vendor id: it opens as `--pid 0xb812`
+(the alias table in `src/session.h`) and needs its line in `tools/70-wsdr.rules`.
 The 8812EU runs the 8822C code unchanged (same firmware entry stub, LA ring, C2H map and streamer; 20 s
 runs at 5 MS/s with zero faults, `evidence/phase6/`). Its board has no 2.4 GHz front end: the chip tunes
 there, but streams the ADC floor. Use it on 5 GHz.

@@ -16,12 +16,29 @@
 
 namespace wsdr {
 
-// Does a USB descriptor (dvid, dpid) correspond to the logical Realtek id (vid, pid)?  Besides the exact
-// match, OEM-branded RTL8812BU dongles are accepted as 0bda:b812: TP-Link Archer T3U Plus = 2357:0138.
+// OEM-branded dongles: a supported Realtek chip under the brand's own USB id. Everything past the USB
+// descriptor (the --pid dispatch, Soapy's "pid", the studio) sees the Realtek pid they stand for.
+// Adding one also needs its line in tools/70-wsdr.rules.
+struct UsbAlias {
+  uint16_t vid, pid, rtl_pid;
+};
+inline constexpr UsbAlias kUsbAliases[] = {
+    {0x2357, 0x0138, 0xb812}, // TP-Link Archer T3U Plus: RTL8812BU
+};
+
+// The Realtek pid a USB descriptor stands for: its own pid under 0bda, an alias's, else 0.
+inline uint16_t realtek_pid(uint16_t dvid, uint16_t dpid) {
+  if (dvid == 0x0bda)
+    return dpid;
+  for (const UsbAlias &a : kUsbAliases)
+    if (a.vid == dvid && a.pid == dpid)
+      return a.rtl_pid;
+  return 0;
+}
+
+// Does a USB descriptor (dvid, dpid) match the requested id (vid, pid)? A 0bda request also matches an alias.
 inline bool usb_id_matches(uint16_t vid, uint16_t pid, uint16_t dvid, uint16_t dpid) {
-  if (dvid == vid && dpid == pid)
-    return true;
-  return vid == 0x0bda && pid == 0xb812 && dvid == 0x2357 && dpid == 0x0138;
+  return (dvid == vid && dpid == pid) || (vid == 0x0bda && pid != 0 && realtek_pid(dvid, dpid) == pid);
 }
 
 struct OpenOpts {
